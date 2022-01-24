@@ -93,12 +93,12 @@ void Controller::init( void ) {
     memcpy(peerInfo.peer_addr, peerAddress, 6);
     esp_now_add_peer(&peerInfo);
 
-    esp_err_t result = esp_now_send(peerAddress, (uint8_t *) &ack, sizeof(ack));
+    esp_err_t result = esp_now_send(peerAddress, (uint8_t *) &ackPayload, sizeof(ackPayload));
   }
 }
 
 void Controller::update( void ) {
-  if( position && ack) {
+  if( ack ) {
     esp_err_t result = esp_now_send(peerAddress, (uint8_t *) &payload, sizeof(payload));
   }
 }

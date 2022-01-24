@@ -21,7 +21,7 @@ void onDataRecv( const uint8_t* macAddr, const uint8_t *incomingData, int len);
 
 class Controller {
     public:
-        CommunicationData ack;
+        CommunicationData ackPayload;
         CommunicationData payload;
 
         void init( void );
