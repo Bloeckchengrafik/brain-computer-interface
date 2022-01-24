@@ -53,7 +53,8 @@ class Main:
 
         print(green("I ") + "Waiting for boot signal")
 
-        buf = ""
+        rbuf = ""
+        buf = "\n" * 1000
 
         while True:
             bytesToRead = self.ser.inWaiting()
@@ -61,13 +62,13 @@ class Main:
             if bytesToRead == 0:
                 continue
 
-            buf += self.ser.read(1).decode('UTF-8')
+            rbuf += self.ser.read(1).decode('UTF-8')
 
-            if buf.endswith('$$$\r\n'):
+            if rbuf.endswith('$$$\r\n'):
                 if self.options.debug:
-                    print(yellow("~~ Begin Debug ~~"))
-                    print(buf)
-                    print(yellow("~~ End Debug ~~"))
+                    buf += "\n ~~ Begin Debug ~~ \n"
+                    buf += rbuf
+                    buf += "\n ~~ End Debug ~~ \n"
                 break
         
         self.scr = curses.initscr()
@@ -80,7 +81,6 @@ class Main:
         curses.init_pair(5, curses.COLOR_BLUE, curses.COLOR_BLACK)
         curses.init_pair(6, curses.COLOR_CYAN, curses.COLOR_BLACK)
         
-        buf = "\n" * 1000
         buf += "I: Boot Signal Recieved. Showing Message line...\n"
         buf += " >>> " + self.ser.readline().decode("UTF-8").replace("\r\n", "") + "\n"
 
@@ -94,7 +94,7 @@ class Main:
         buf += "I: Done! Starting Real Time Transmission\n"
         self.scr.nodelay(True)
         
-        titlebar = " BCIShell v1.0 - esc to exit"
+        titlebar = " BCIShell v1.0"
 
         tts = ""
         while True:
@@ -117,12 +117,15 @@ class Main:
 
                 if s.startswith("!"):
                     color = curses.color_pair(3)
+                    s = s[1:]
                 
                 elif s.startswith("#"):
                     color = curses.color_pair(4)
+                    s = s[1:]
 
                 elif s.startswith("*"):
                     color = curses.color_pair(5)
+                    s = s[1:]
 
                 self.scr.addstr(y-(i+2), 1, s, color)
 
