@@ -4,6 +4,8 @@
 #include <HardwareSerial.h>
 
 uint8_t peerAddress[6] = {0x00, 0x9d, 0xc2, 0xc2, 0xef, 0x60};
+esp_now_peer_info_t peerInfo;
+bool ack;
 
 void onDataSent( const uint8_t* macAddr, esp_now_send_status_t state) {
   if ( state == ESP_NOW_SEND_SUCCESS ) {
@@ -15,6 +17,13 @@ void onDataSent( const uint8_t* macAddr, esp_now_send_status_t state) {
 }
 
 void onDataRecv( const uint8_t* macAddr, const uint8_t *incomingData, int len) {
+  if ( position ) {
+    memcpy(peerInfo.peer_addr, macAddr, 6);
+    esp_now_add_peer(&peerInfo);
+    ack = true;
+    return;
+  }
+  
   Serial.print("#Recv Packet! Bytes Recv: ");
   Serial.println(len);
 
@@ -83,15 +92,13 @@ void Controller::init( void ) {
     
     memcpy(peerInfo.peer_addr, peerAddress, 6);
     esp_now_add_peer(&peerInfo);
+
+    esp_err_t result = esp_now_send(peerAddress, (uint8_t *) &ack, sizeof(ack));
   }
 }
 
 void Controller::update( void ) {
-  if( position ) {
-    
-  } else {
-    payload.trigger = !payload.trigger;
-    payload.pos[0] = 42;
+  if( position && ack) {
     esp_err_t result = esp_now_send(peerAddress, (uint8_t *) &payload, sizeof(payload));
   }
 }

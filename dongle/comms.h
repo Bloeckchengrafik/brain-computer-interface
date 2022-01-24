@@ -6,6 +6,8 @@
 #define WIFI_CHANNEL 0
 
 extern uint8_t peerAddress[6];
+extern esp_now_peer_info_t peerInfo;
+extern bool ack;
 
 class CommunicationData {
     public:
@@ -19,8 +21,8 @@ void onDataRecv( const uint8_t* macAddr, const uint8_t *incomingData, int len);
 
 class Controller {
     public:
+        CommunicationData ack;
         CommunicationData payload;
-        esp_now_peer_info_t peerInfo;
 
         void init( void );
         void update( void );

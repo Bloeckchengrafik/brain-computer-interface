@@ -11,7 +11,7 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  // ctrl.update();
+  ctrl.update();
 
   delay(1000);
 }
