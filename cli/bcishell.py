@@ -1,5 +1,4 @@
 from serial.tools.list_ports import main as startLister 
-from colors import red, green, yellow, color
 import curses
 import serial
 import optparse
@@ -7,6 +6,18 @@ import sys
 import re
 import os
 import string
+
+def red(s):
+    return s
+
+def green(s):
+    return s
+
+def yellow(s):
+    return s
+
+def color(s, *a):
+    return s
 
 
 class Main:
