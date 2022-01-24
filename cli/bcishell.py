@@ -6,6 +6,7 @@ import optparse
 import sys
 import re
 import os
+import string
 
 
 class Main:
@@ -31,17 +32,18 @@ class Main:
         if self.options.mac == None:
             self.parser.print_help()
             exit()
+
+
+        match = re.search(r"^[a-fA-F0-9]{2}(:[a-fA-F0-9]{2}){5}$", self.options.mac)
+
+        if not match:
+            print(red(f"E: '{self.options.mac}' is not a vaild mac address"))
+            exit()
         
         self.ser = serial.Serial()
 
         self.ser.port = self.options.port
         self.ser.baudrate = 115200
-
-        self.scr = curses.initscr()
-        curses.start_color()
-
-        curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLACK)
-        curses.init_pair(2, curses.COLOR_BLACK, curses.COLOR_RED)
 
         try:
             self.ser.open()
@@ -68,60 +70,81 @@ class Main:
                     print(yellow("~~ End Debug ~~"))
                 break
         
-        print(green("I ") + "Boot Signal Recieved. Showing Message line...")
-        print(red(" >>> ") + self.ser.readline().decode("UTF-8").replace("\r\n", ""))
+        self.scr = curses.initscr()
+        curses.start_color()
 
-        mac_to_send = self.options.mac
+        curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLACK)
+        curses.init_pair(2, curses.COLOR_BLACK, curses.COLOR_RED)
+        curses.init_pair(3, curses.COLOR_RED, curses.COLOR_BLACK)
+        curses.init_pair(4, curses.COLOR_YELLOW, curses.COLOR_BLACK)
+        curses.init_pair(5, curses.COLOR_BLUE, curses.COLOR_BLACK)
+        curses.init_pair(6, curses.COLOR_CYAN, curses.COLOR_BLACK)
         
-        match = re.search(r"^[a-fA-F0-9]{2}(:[a-fA-F0-9]{2}){5}$", mac_to_send)
+        buf = "\n" * 1000
+        buf += "I: Boot Signal Recieved. Showing Message line...\n"
+        buf += " >>> " + self.ser.readline().decode("UTF-8").replace("\r\n", "") + "\n"
 
-        if not match:
-            print(red(f"E: '{mac_to_send}' is not a vaild mac address"))
-            exit()
+        mac_bytes = self.options.mac.split(":")
+       
+        buf += f"I: Sending Mac Adress {mac_bytes}! \n"
 
-        mac_bytes = match.string.split(":")
-        
-        for b in mac_bytes:
-            self.ser.write(bytes(int(b, 16)))
-        
+        self.ser.write(bytearray.fromhex(self.options.mac.replace(":", " ") + " 00"))        
         self.ser.flush()
         
-        print(green("I ") + "Done! Starting Real Time Transmission")
+        buf += "I: Done! Starting Real Time Transmission\n"
+        self.scr.nodelay(True)
         
-        x = self.scr.getmaxyx()[0]
-        
-        titlebar = " BCIShell v1.0 "
+        titlebar = " BCIShell v1.0 - esc to exit"
 
-        buf = "\n" * 1000
+        tts = ""
         while True:
-            (x, y) = self.scr.getmaxyx()
+            (y, x) = self.scr.getmaxyx()
             
             self.scr.clear()
-            self.scr.addstr(0, 0, titlebar + (" " * (y - len(titlebar))), curses.color_pair(2))
-            
+            self.scr.addstr(0, 0, titlebar + (" " * (x - len(titlebar))), curses.color_pair(2))
+            self.scr.addstr(y-2, 0, "> " + tts + (" " * (x - len("> " + tts))), curses.color_pair(2))
+           
+            bytes_to_read = self.ser.inWaiting()
+            if bytes_to_read != 0:
+                buf += self.ser.read(bytes_to_read).decode("UTF-8")
+
+            splitbuf = buf.split("\n")
+
+            for i in range(1, y-2):
+                s = splitbuf[-i]
+
+                color = curses.color_pair(6)
+
+                if s.startswith("!"):
+                    color = curses.color_pair(3)
+                
+                elif s.startswith("#"):
+                    color = curses.color_pair(4)
+
+                elif s.startswith("*"):
+                    color = curses.color_pair(5)
+
+                self.scr.addstr(y-(i+2), 1, s, color)
+
             self.scr.refresh()
-            self.scr.nodelay(True)
 
             cmd = self.scr.getch()
-
-            self.scr.addstr(10, 3, str(cmd))
+            if cmd == 27:
+                self.end()
+                exit()
             if cmd != -1:
-                if cmd == curses.KEY_END:
-                    self.end()
-                    return
+                char = chr(cmd)
+                if char in string.printable and len(tts) < x - 10 and cmd != 10:
+                    tts += char
+                elif cmd == 8 and len(tts) > 0:
+                    tts = tts[:-1]
+                elif cmd == 10:
+                    tts += "\n"
+                    self.ser.write(tts.encode("UTF-8"))
+                    self.ser.flush()
+                    buf += "\n > " + tts + "\n"
+                    tts = ""
 
-        try:
-            buf = "\n"
-            while True:
-                bytesToRead = self.ser.inWaiting()
-
-                if bytesToRead == 0:
-                    continue
-
-                print(yellow(self.ser.read(1).decode('UTF-8')), end="")
-        except KeyboardInterrupt:
-            print(red("\nStopping Transmission..."))
-        
         self.end()
 
     def end(self):
@@ -130,3 +153,4 @@ class Main:
 
 if __name__ == '__main__':
     Main()
+

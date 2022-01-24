@@ -3,7 +3,7 @@
 #include <esp_now.h>
 #include <HardwareSerial.h>
 
-uint8_t peerAddress[6] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+uint8_t peerAddress[6] = {0x00, 0x9d, 0xc2, 0xc2, 0xef, 0x60};
 
 void onDataSent( const uint8_t* macAddr, esp_now_send_status_t state) {
   if ( state == ESP_NOW_SEND_SUCCESS ) {
@@ -65,7 +65,7 @@ void Controller::init( void ) {
     Serial.print("#Recv MAC ");
     
     for (int i = 0; i < 6; i++) {
-      while ( !Serial.available() );
+      while ( Serial.available() <= 1 );
 
       uint8_t readByte = Serial.read();
       
@@ -90,6 +90,8 @@ void Controller::update( void ) {
   if( position ) {
     
   } else {
+    payload.trigger = !payload.trigger;
+    payload.pos[0] = 42;
     esp_err_t result = esp_now_send(peerAddress, (uint8_t *) &payload, sizeof(payload));
   }
 }
