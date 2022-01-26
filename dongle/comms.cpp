@@ -17,15 +17,24 @@ void onDataSent( const uint8_t* macAddr, esp_now_send_status_t state) {
 }
 
 void onDataRecv( const uint8_t* macAddr, const uint8_t *incomingData, int len) {
-  if ( position ) {
-    memcpy(peerInfo.peer_addr, macAddr, 6);
-    esp_now_add_peer(&peerInfo);
+  Serial.println("#Recv");
+  if ( position == 1) {
     ack = true;
+    Serial.print("#Ack now ");
+    Serial.println(ack);
+    uint8_t lPeerAddress[6] = {0x00, 0x9d, 0xc2, 0xc2, 0xef, 0x60};
+
+    for (int i = 0; i < 6; i++) {
+      lPeerAddress[i] = *macAddr;
+      macAddr++;
+
+      Serial.printf("%02x:", lPeerAddress[i] & 0xff);
+    }
+    
+    memcpy(peerInfo.peer_addr, lPeerAddress, 6);
+    esp_now_add_peer(&peerInfo);
     return;
   }
-  
-  Serial.print("#Recv Packet! Bytes Recv: ");
-  Serial.println(len);
 
   CommunicationData buffer;
   memcpy(&buffer, incomingData, sizeof(buffer));
@@ -93,12 +102,14 @@ void Controller::init( void ) {
     memcpy(peerInfo.peer_addr, peerAddress, 6);
     esp_now_add_peer(&peerInfo);
 
-    esp_err_t result = esp_now_send(peerAddress, (uint8_t *) &ackPayload, sizeof(ackPayload));
+    esp_now_send(peerAddress, (uint8_t *) &ackPayload, sizeof(ackPayload));
   }
 }
 
 void Controller::update( void ) {
-  if( ack ) {
-    esp_err_t result = esp_now_send(peerAddress, (uint8_t *) &payload, sizeof(payload));
+  if( ack == true ) {
+    Serial.print("#Sending... ");
+    esp_err_t error = esp_now_send(peerAddress, (uint8_t *) &payload, sizeof(payload));
+    Serial.println(error);
   }
 }
