@@ -62,10 +62,10 @@ class Main:
             print(red("This Port could not be found"))
             exit()
 
-        print(green("I ") + "Waiting for boot signal")
+        print(green("I: ") + "Waiting for boot signal")
 
         rbuf = ""
-        buf = "\n" * 1000
+        buf = ""
 
         while True:
             bytesToRead = self.ser.inWaiting()
@@ -76,10 +76,6 @@ class Main:
             rbuf += self.ser.read(1).decode('UTF-8')
 
             if rbuf.endswith('$$$\r\n'):
-                if self.options.debug:
-                    buf += "\n ~~ Begin Debug ~~ \n"
-                    buf += rbuf
-                    buf += "\n ~~ End Debug ~~ \n"
                 break
         
         self.scr = curses.initscr()
@@ -91,18 +87,21 @@ class Main:
         curses.init_pair(4, curses.COLOR_YELLOW, curses.COLOR_BLACK)
         curses.init_pair(5, curses.COLOR_BLUE, curses.COLOR_BLACK)
         curses.init_pair(6, curses.COLOR_CYAN, curses.COLOR_BLACK)
+        curses.init_pair(7, curses.COLOR_GREEN, curses.COLOR_BLACK)
         
-        buf += "I: Boot Signal Recieved. Showing Message line...\n"
+        buf = ("\n" * self.scr.getmaxyx()[0]) + buf
+
+        buf += "/I: Boot Signal Recieved. Showing Message line...\n"
         buf += " >>> " + self.ser.readline().decode("UTF-8").replace("\r\n", "") + "\n"
 
         mac_bytes = self.options.mac.split(":")
        
-        buf += f"I: Sending Mac Adress {mac_bytes}! \n"
+        buf += f"/I: Sending Mac Adress {mac_bytes}! \n"
 
         self.ser.write(bytearray.fromhex(self.options.mac.replace(":", " ") + " 00"))        
         self.ser.flush()
         
-        buf += "I: Done! Starting Real Time Transmission\n"
+        buf += "/I: Done! Starting Real Time Transmission\n"
         self.scr.nodelay(True)
         
         titlebar = " BCIShell v1.0"
@@ -136,6 +135,10 @@ class Main:
 
                 elif s.startswith("*"):
                     color = curses.color_pair(5)
+                    s = s[1:]
+
+                elif s.startswith("/"):
+                    color = curses.color_pair(7)
                     s = s[1:]
 
                 self.scr.addstr(y-(i+2), 1, s, color)
