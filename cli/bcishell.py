@@ -7,18 +7,15 @@ import re
 import os
 import string
 
-def red(s):
-    return s
-
-def green(s):
-    return s
-
-def yellow(s):
-    return s
-
-def color(s, *a):
-    return s
-
+class MEmu:
+    def __init__(self):
+        self.buf = "$$$\r\nMAC-Address: Machine Emulation\n"
+        self.pos = 0
+        self.port = ""
+        self.baudrate = ""
+    
+    def open(self):
+        self.buf += "#Signal: Open\n"
 
 class Main:
     def __init__(self):
@@ -48,10 +45,10 @@ class Main:
         match = re.search(r"^[a-fA-F0-9]{2}(:[a-fA-F0-9]{2}){5}$", self.options.mac)
 
         if not match:
-            print(red(f"E: '{self.options.mac}' is not a vaild mac address"))
+            print(f"E: '{self.options.mac}' is not a vaild mac address")
             exit()
         
-        self.ser = serial.Serial()
+        self.ser = MEmu()# serial.Serial()
 
         self.ser.port = self.options.port
         self.ser.baudrate = 115200
@@ -59,10 +56,10 @@ class Main:
         try:
             self.ser.open()
         except serial.SerialException:
-            print(red("This Port could not be found"))
+            print("This Port could not be found")
             exit()
 
-        print(green("I: ") + "Waiting for boot signal")
+        print("I: Waiting for boot signal")
 
         rbuf = ""
         buf = ""
